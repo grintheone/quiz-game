@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand/v2"
 	"os"
 	"strings"
 	"time"
@@ -74,7 +75,7 @@ func main() {
 		correct int
 		runtime = flag.Int("time", 30, "specify the duration of the quiz in seconds")
 		fname   = flag.String("fname", "problems.csv", "specify the filename to open")
-		// shuffle = flag.Bool("rand", true, "whether or not shuffle quiz questions")
+		shuffle = flag.Bool("rand", false, "whether or not shuffle quiz questions")
 	)
 
 	flag.Parse()
@@ -85,6 +86,13 @@ func main() {
 	}
 
 	questions := parseCsv(f)
+
+	if *shuffle { // shuffle questions if the flag is active
+		rand.Shuffle(len(questions), func(i, j int) {
+			questions[i], questions[j] = questions[j], questions[i]
+		})
+	}
+
 	results := make(chan string, len(questions))
 
 	timeout := initializeTimeout(runtime)
