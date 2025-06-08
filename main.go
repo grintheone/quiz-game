@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/eiannone/keyboard"
 )
@@ -31,7 +32,22 @@ func parseCsv(r io.Reader) (q []question) {
 	return q
 }
 
-func startQuiz() {
+func startQuiz(questions []question, results chan string, correct *int) {
+	for _, q := range questions {
+		var answer string
+
+		results <- fmt.Sprintf("%s = ", q[0])
+		fmt.Scanln(&answer)
+
+		if answer == q[1] {
+			*correct++
+		}
+	}
+
+	close(results)
+}
+
+func initializeTimeout(duration *int) (timeout <-chan time.Time) {
 	fmt.Println("Press ENTER to start the quiz, any other key will terminate the program")
 
 	_, key, err := keyboard.GetSingleKey()
@@ -42,12 +58,17 @@ func startQuiz() {
 	if key != keyboard.KeyEnter {
 		log.Fatal("Terminating program")
 	}
+
+	return time.After(time.Second * time.Duration(*duration))
 }
 
 func main() {
-	var correct int
+	var (
+		correct int
+		runtime = flag.Int("time", 30, "specify the duration of the quiz in seconds")
+		fname   = flag.String("fname", "problems.csv", "specify the filename to open")
+	)
 
-	fname := flag.String("fname", "problems.csv", "specify the filename to open")
 	flag.Parse()
 
 	f, err := os.Open(*fname)
@@ -56,18 +77,25 @@ func main() {
 	}
 
 	questions := parseCsv(f)
-	startQuiz()
+	results := make(chan string, len(questions))
 
-	for _, q := range questions {
-		var answer string
+	timeout := initializeTimeout(runtime)
+	go startQuiz(questions, results, &correct)
 
-		fmt.Printf("%s = ", q[0])
-		fmt.Scanln(&answer)
+loop:
+	for {
+		select {
+		case <-timeout:
+			fmt.Println("\nTime is up")
+			break loop
+		case v, ok := <-results:
+			if !ok {
+				break loop
+			}
 
-		if answer == q[1] {
-			correct++
+			fmt.Printf("%v", v)
 		}
 	}
 
-	fmt.Printf("\nTotal questions: %d\nCorrect answers: %d\n", len(questions), correct)
+	fmt.Printf("\nCorrect answers: %d\nTotal questions: %d\n", correct, len(questions))
 }
