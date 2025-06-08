@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/eiannone/keyboard"
@@ -34,12 +35,18 @@ func parseCsv(r io.Reader) (q []question) {
 
 func startQuiz(questions []question, results chan string, correct *int) {
 	for _, q := range questions {
-		var answer string
+		var input string
+		question := q[0]
+		answer := q[1]
 
-		results <- fmt.Sprintf("%s = ", q[0])
-		fmt.Scanln(&answer)
+		results <- fmt.Sprintf("%s = ", question)
+		fmt.Scanln(&input)
 
-		if answer == q[1] {
+		answer = strings.Trim(answer, " ")
+		answer = strings.ToLower(answer)
+		input = strings.ToLower(input)
+
+		if input == answer {
 			*correct++
 		}
 	}
@@ -67,6 +74,7 @@ func main() {
 		correct int
 		runtime = flag.Int("time", 30, "specify the duration of the quiz in seconds")
 		fname   = flag.String("fname", "problems.csv", "specify the filename to open")
+		// shuffle = flag.Bool("rand", true, "whether or not shuffle quiz questions")
 	)
 
 	flag.Parse()
