@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	"github.com/eiannone/keyboard"
 )
 
 type question []string
@@ -29,6 +31,19 @@ func parseCsv(r io.Reader) (q []question) {
 	return q
 }
 
+func startQuiz() {
+	fmt.Println("Press ENTER to start the quiz, any other key will terminate the program")
+
+	_, key, err := keyboard.GetSingleKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if key != keyboard.KeyEnter {
+		log.Fatal("Terminating program")
+	}
+}
+
 func main() {
 	var correct int
 
@@ -41,6 +56,7 @@ func main() {
 	}
 
 	questions := parseCsv(f)
+	startQuiz()
 
 	for _, q := range questions {
 		var answer string
