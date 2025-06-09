@@ -85,6 +85,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	defer f.Close()
+
 	questions := parseCsv(f)
 
 	if *shuffle { // shuffle questions if the flag is active
